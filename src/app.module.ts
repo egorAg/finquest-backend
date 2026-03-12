@@ -14,6 +14,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { KnowledgeModule } from './knowledge/knowledge.module';
 import { XpModule } from './xp/xp.module';
+import { BotModule } from './bot/bot.module';
 
 @Module({
   controllers: [HealthController],
@@ -21,6 +22,7 @@ import { XpModule } from './xp/xp.module';
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     XpModule,
+    BotModule,
     AuthModule,
     UsersModule,
     SpacesModule,

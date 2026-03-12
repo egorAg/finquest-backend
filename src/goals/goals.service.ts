@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { XpService } from '../xp/xp.service';
+import { BotService } from '../bot/bot.service';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { UpdateGoalDto } from './dto/update-goal.dto';
 
@@ -9,6 +10,7 @@ export class GoalsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly xp: XpService,
+    private readonly bot: BotService,
   ) {}
 
   async getGoals(userId: string, spaceId?: string) {
@@ -56,6 +58,16 @@ export class GoalsService {
         data.isCompleted = true;
         data.completedAt = new Date();
         await this.xp.addXp(userId, 100);
+
+        // Уведомляем всех участников пространства
+        const members = await this.prisma.spaceMember.findMany({
+          where: { spaceId: goal.spaceId },
+          include: { user: true },
+        });
+        const msg = `🎯 *Цель выполнена!*\n«${goal.name}» ${goal.emoji} накоплена полностью! +100 XP`;
+        for (const m of members) {
+          await this.bot.sendNotification(m.user.telegramId, msg);
+        }
       }
     }
 

@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { XpService } from '../xp/xp.service';
+import { BotService } from '../bot/bot.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { QueryTransactionsDto } from './dto/query-transactions.dto';
 
@@ -9,6 +10,7 @@ export class TransactionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly xp: XpService,
+    private readonly bot: BotService,
   ) {}
 
   async getTransactions(userId: string, query: QueryTransactionsDto) {
@@ -69,6 +71,21 @@ export class TransactionsService {
     await this.xp.updateStreak(userId);
     await this.xp.checkFirstTransaction(userId);
     const updatedUser = await this.xp.addXp(userId, 10);
+
+    // Уведомляем других участников общего пространства
+    const space = await this.prisma.space.findUnique({ where: { id: dto.spaceId } });
+    if (space && space.type !== 'PERSONAL') {
+      const members = await this.prisma.spaceMember.findMany({
+        where: { spaceId: dto.spaceId, userId: { not: userId } },
+        include: { user: true },
+      });
+      const emoji = dto.type === 'EXPENSE' ? '💸' : '💰';
+      const sign = dto.type === 'EXPENSE' ? '-' : '+';
+      const msg = `${emoji} *Новая транзакция* в «${space.name}»\n${transaction.user.firstName} добавил ${sign}${dto.amount} ₽ — ${dto.category}`;
+      for (const m of members) {
+        await this.bot.sendNotification(m.user.telegramId, msg);
+      }
+    }
 
     return { transaction, xpEarned: 10, user: updatedUser };
   }
