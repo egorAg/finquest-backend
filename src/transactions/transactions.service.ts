@@ -81,9 +81,18 @@ export class TransactionsService {
       });
       const emoji = dto.type === 'EXPENSE' ? '💸' : '💰';
       const sign = dto.type === 'EXPENSE' ? '-' : '+';
+      const action = dto.type === 'EXPENSE' ? 'списал(а)' : 'внёс(ла)';
       const msg = `${emoji} *Новая транзакция* в «${space.name}»\n${transaction.user.firstName} добавил ${sign}${dto.amount} ₽ — ${dto.category}`;
       for (const m of members) {
         await this.bot.sendNotification(m.user.telegramId, msg);
+        await this.prisma.notification.create({
+          data: {
+            userId: m.userId,
+            type: 'TRANSACTION',
+            title: `${emoji} ${dto.category}`,
+            text: `${transaction.user.firstName} ${action} ${dto.amount} ₽ в «${space.name}»`,
+          },
+        });
       }
     }
 

@@ -50,6 +50,7 @@ enum NotificationType {
   ACHIEVEMENT
   TIP
   NEW_MEMBER
+  TRANSACTION
 }
 
 // ─── Models ───────────────────────────────────────────────────────────────────
