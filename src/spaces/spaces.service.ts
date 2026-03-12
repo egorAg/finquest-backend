@@ -41,6 +41,10 @@ export class SpacesService {
   }
 
   async createInvite(userId: string, spaceId: string) {
+    const space = await this.prisma.space.findUnique({ where: { id: spaceId } });
+    if (!space) throw new NotFoundException('Space not found');
+    if (space.type === 'PERSONAL') throw new BadRequestException('Cannot invite to a personal space');
+
     const member = await this.prisma.spaceMember.findUnique({
       where: { spaceId_userId: { spaceId, userId } },
     });
@@ -64,7 +68,13 @@ export class SpacesService {
       include: { space: true },
     });
     if (!invite) throw new NotFoundException('Invite not found or expired');
+    if (invite.usedAt) throw new BadRequestException('Invite link has already been used');
     if (invite.expiresAt < new Date()) throw new BadRequestException('Invite link has expired');
+
+    await this.prisma.spaceInvite.update({
+      where: { id: invite.id },
+      data: { usedAt: new Date() },
+    });
 
     await this.prisma.spaceMember.upsert({
       where: { spaceId_userId: { spaceId: invite.spaceId, userId } },
@@ -91,9 +101,27 @@ export class SpacesService {
     });
   }
 
+  async leaveSpace(userId: string, spaceId: string) {
+    const space = await this.prisma.space.findUnique({ where: { id: spaceId } });
+    if (!space) throw new NotFoundException('Space not found');
+    if (space.ownerId === userId) throw new BadRequestException('Owner cannot leave their own space');
+
+    const member = await this.prisma.spaceMember.findUnique({
+      where: { spaceId_userId: { spaceId, userId } },
+    });
+    if (!member) throw new NotFoundException('Not a member of this space');
+
+    await this.prisma.spaceMember.delete({
+      where: { spaceId_userId: { spaceId, userId } },
+    });
+
+    return { ok: true };
+  }
+
   async addMember(userId: string, spaceId: string, dto: AddMemberDto) {
     const space = await this.prisma.space.findUnique({ where: { id: spaceId } });
     if (!space) throw new NotFoundException('Space not found');
+    if (space.type === 'PERSONAL') throw new BadRequestException('Cannot add members to a personal space');
     if (space.ownerId !== userId) throw new ForbiddenException('Only owner can add members');
 
     const invitee = await this.prisma.user.findFirst({

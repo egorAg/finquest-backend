@@ -194,13 +194,14 @@ model Notification {
 }
 
 model SpaceInvite {
-  id        String   @id @default(uuid())
-  token     String   @unique @default(uuid())
+  id        String    @id @default(uuid())
+  token     String    @unique @default(uuid())
   spaceId   String
-  space     Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  space     Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   createdBy String
   expiresAt DateTime
-  createdAt DateTime @default(now())
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 }
 
 model KnowledgeArticle {

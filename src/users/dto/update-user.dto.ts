@@ -1,4 +1,19 @@
-import { IsBoolean, IsIn, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class UserSettingsDto {
+  @IsOptional()
+  @IsString()
+  currency?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  notifications?: boolean;
+
+  @IsOptional()
+  @IsIn(['dark', 'light'])
+  theme?: 'dark' | 'light';
+}
 
 export class UpdateUserDto {
   @IsOptional()
@@ -10,9 +25,7 @@ export class UpdateUserDto {
   avatarEmoji?: string;
 
   @IsOptional()
-  settings?: {
-    currency?: string;
-    notifications?: boolean;
-    theme?: 'dark' | 'light';
-  };
+  @ValidateNested()
+  @Type(() => UserSettingsDto)
+  settings?: UserSettingsDto;
 }

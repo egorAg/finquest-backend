@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SpacesService } from './spaces.service';
 import { CreateSpaceDto } from './dto/create-space.dto';
@@ -27,6 +27,11 @@ export class SpacesController {
   @Post(':id/invite')
   createInvite(@Request() req: any, @Param('id') spaceId: string) {
     return this.spacesService.createInvite(req.user.id, spaceId);
+  }
+
+  @Delete(':id/leave')
+  leaveSpace(@Request() req: any, @Param('id') spaceId: string) {
+    return this.spacesService.leaveSpace(req.user.id, spaceId);
   }
 
   @Post(':id/members')
