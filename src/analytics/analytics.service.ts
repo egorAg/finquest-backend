@@ -15,9 +15,18 @@ export class AnalyticsService {
     const from = new Date(year, mon - 1, 1);
     const to = new Date(year, mon, 1);
 
-    const transactions = await this.prisma.transaction.findMany({
-      where: { spaceId, date: { gte: from, lt: to } },
-    });
+    // Previous month range
+    const prevFrom = new Date(year, mon - 2, 1);
+    const prevTo = from;
+
+    const [transactions, prevTransactions] = await Promise.all([
+      this.prisma.transaction.findMany({
+        where: { spaceId, date: { gte: from, lt: to } },
+      }),
+      this.prisma.transaction.findMany({
+        where: { spaceId, date: { gte: prevFrom, lt: prevTo } },
+      }),
+    ]);
 
     const income = transactions
       .filter((t) => t.type === 'INCOME')
@@ -53,6 +62,25 @@ export class AnalyticsService {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, vals]) => ({ date, ...vals }));
 
-    return { income, expense, balance, byCategory, byDay };
+    // Previous month totals
+    const prevIncome = prevTransactions
+      .filter((t) => t.type === 'INCOME')
+      .reduce((s, t) => s + t.amount, 0);
+    const prevExpense = prevTransactions
+      .filter((t) => t.type === 'EXPENSE')
+      .reduce((s, t) => s + t.amount, 0);
+
+    // Month metadata for forecast
+    const daysInMonth = new Date(year, mon, 0).getDate();
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === year && today.getMonth() + 1 === mon;
+    const daysElapsed = isCurrentMonth ? today.getDate() : daysInMonth;
+
+    return {
+      income, expense, balance, byCategory, byDay,
+      prevMonth: { income: prevIncome, expense: prevExpense, balance: prevIncome - prevExpense },
+      daysInMonth,
+      daysElapsed,
+    };
   }
 }
