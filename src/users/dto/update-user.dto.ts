@@ -11,6 +11,10 @@ class UserSettingsDto {
   notifications?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  botNotifications?: boolean;
+
+  @IsOptional()
   @IsIn(['dark', 'light'])
   theme?: 'dark' | 'light';
 }
