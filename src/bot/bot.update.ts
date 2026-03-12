@@ -8,7 +8,7 @@ export class BotUpdate {
 
   @Start()
   async onStart(ctx: Context) {
-    const appUrl = this.config.get<string>('APP_URL')!;
+    const botUsername = (await ctx.telegram.getMe()).username;
     const name = ctx.from?.first_name ?? 'друг';
 
     await ctx.reply(
@@ -17,7 +17,7 @@ export class BotUpdate {
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [[
-            { text: '🚀 Открыть FinQuest', web_app: { url: appUrl } },
+            { text: '🚀 Открыть FinQuest', url: `https://t.me/${botUsername}/finquest` },
           ]],
         },
       } as any,

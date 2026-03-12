@@ -34,11 +34,12 @@ export class BotService implements OnModuleInit {
   async sendNotification(telegramId: bigint, message: string) {
     const appUrl = this.config.get<string>('APP_URL')!;
     try {
+      const me = await this.bot.telegram.getMe();
       await this.bot.telegram.sendMessage(String(telegramId), message, {
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [[
-            { text: '📱 Открыть приложение', web_app: { url: appUrl } },
+            { text: '📱 Открыть приложение', url: `https://t.me/${me.username}/finquest` },
           ]],
         },
       } as any);
