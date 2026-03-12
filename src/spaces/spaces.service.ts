@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSpaceDto } from './dto/create-space.dto';
 import { AddMemberDto } from './dto/add-member.dto';
+import { UpdateSpaceDto } from './dto/update-space.dto';
 
 @Injectable()
 export class SpacesService {
@@ -118,6 +119,32 @@ export class SpacesService {
       where: { spaceId_userId: { spaceId, userId } },
     });
 
+    return { ok: true };
+  }
+
+  async updateSpace(userId: string, spaceId: string, dto: UpdateSpaceDto) {
+    const space = await this.prisma.space.findUnique({ where: { id: spaceId } });
+    if (!space) throw new NotFoundException('Space not found');
+    if (space.ownerId !== userId) throw new ForbiddenException('Only owner can edit this space');
+
+    return this.prisma.space.update({
+      where: { id: spaceId },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.emoji !== undefined && { emoji: dto.emoji }),
+        ...(dto.monthlyBudget !== undefined && { monthlyBudget: dto.monthlyBudget }),
+      },
+      include: { members: true },
+    });
+  }
+
+  async deleteSpace(userId: string, spaceId: string) {
+    const space = await this.prisma.space.findUnique({ where: { id: spaceId } });
+    if (!space) throw new NotFoundException('Space not found');
+    if (space.ownerId !== userId) throw new ForbiddenException('Only owner can delete this space');
+    if (space.type === 'PERSONAL') throw new BadRequestException('Cannot delete personal space');
+
+    await this.prisma.space.delete({ where: { id: spaceId } });
     return { ok: true };
   }
 

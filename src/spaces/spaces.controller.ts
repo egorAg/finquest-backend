@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SpacesService } from './spaces.service';
 import { CreateSpaceDto } from './dto/create-space.dto';
 import { AddMemberDto } from './dto/add-member.dto';
+import { UpdateSpaceDto } from './dto/update-space.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('spaces')
@@ -17,6 +18,16 @@ export class SpacesController {
   @Post()
   createSpace(@Request() req: any, @Body() dto: CreateSpaceDto) {
     return this.spacesService.createSpace(req.user.id, dto);
+  }
+
+  @Patch(':id')
+  updateSpace(@Request() req: any, @Param('id') spaceId: string, @Body() dto: UpdateSpaceDto) {
+    return this.spacesService.updateSpace(req.user.id, spaceId, dto);
+  }
+
+  @Delete(':id')
+  deleteSpace(@Request() req: any, @Param('id') spaceId: string) {
+    return this.spacesService.deleteSpace(req.user.id, spaceId);
   }
 
   @Post('join/:token')
