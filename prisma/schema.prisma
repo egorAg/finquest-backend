@@ -74,6 +74,7 @@ model User {
   notificationsEnabled Boolean @default(true)
   botNotificationsEnabled Boolean @default(true)
   theme                String  @default("dark")
+  onboardingDone       Boolean @default(false)
   createdAt      DateTime  @default(now())
 
   ownedSpaces      Space[]           @relation("SpaceOwner")

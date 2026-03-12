@@ -20,6 +20,7 @@ export class UsersService {
     const data: any = {};
     if (dto.firstName !== undefined) data.firstName = dto.firstName;
     if (dto.avatarEmoji !== undefined) data.avatarEmoji = dto.avatarEmoji;
+    if (dto.onboardingDone !== undefined) data.onboardingDone = dto.onboardingDone;
     if (dto.settings) {
       if (dto.settings.currency !== undefined) data.currency = dto.settings.currency;
       if (dto.settings.notifications !== undefined) data.notificationsEnabled = dto.settings.notifications;
@@ -36,7 +37,7 @@ export class UsersService {
   }
 
   formatUser(user: any) {
-    const { achievements, currency, notificationsEnabled, botNotificationsEnabled, theme, language, ...rest } = user;
+    const { achievements, currency, notificationsEnabled, botNotificationsEnabled, theme, onboardingDone, language, ...rest } = user;
     const xpPerLevel = 200;
     const xpToNext = xpPerLevel - (rest.xp % xpPerLevel);
     return {
@@ -44,6 +45,7 @@ export class UsersService {
       telegramId: rest.telegramId ? Number(rest.telegramId) : null,
       xpToNext,
       achievements: achievements?.map((ua: any) => ua.achievementId) ?? [],
+      onboardingDone: onboardingDone ?? false,
       settings: {
         currency: currency ?? 'RUB',
         notifications: notificationsEnabled ?? true,

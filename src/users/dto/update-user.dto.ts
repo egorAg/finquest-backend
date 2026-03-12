@@ -29,6 +29,10 @@ export class UpdateUserDto {
   avatarEmoji?: string;
 
   @IsOptional()
+  @IsBoolean()
+  onboardingDone?: boolean;
+
+  @IsOptional()
   @ValidateNested()
   @Type(() => UserSettingsDto)
   settings?: UserSettingsDto;
