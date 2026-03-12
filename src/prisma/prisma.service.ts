@@ -17,6 +17,7 @@ export class PrismaService implements OnModuleInit {
   get transaction()     { return this._client.transaction; }
   get goal()            { return this._client.goal; }
   get challenge()       { return this._client.challenge; }
+  get userChallenge()   { return this._client.userChallenge; }
   get achievement()     { return this._client.achievement; }
   get userAchievement() { return this._client.userAchievement; }
   get notification()    { return this._client.notification; }
