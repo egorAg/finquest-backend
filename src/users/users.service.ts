@@ -23,6 +23,7 @@ export class UsersService {
     if (dto.settings) {
       if (dto.settings.currency !== undefined) data.currency = dto.settings.currency;
       if (dto.settings.notifications !== undefined) data.notificationsEnabled = dto.settings.notifications;
+      if (dto.settings.botNotifications !== undefined) data.botNotificationsEnabled = dto.settings.botNotifications;
       if (dto.settings.theme !== undefined) data.theme = dto.settings.theme;
     }
 
@@ -35,7 +36,7 @@ export class UsersService {
   }
 
   formatUser(user: any) {
-    const { achievements, currency, notificationsEnabled, theme, language, ...rest } = user;
+    const { achievements, currency, notificationsEnabled, botNotificationsEnabled, theme, language, ...rest } = user;
     const xpPerLevel = 200;
     const xpToNext = xpPerLevel - (rest.xp % xpPerLevel);
     return {
@@ -46,6 +47,7 @@ export class UsersService {
       settings: {
         currency: currency ?? 'RUB',
         notifications: notificationsEnabled ?? true,
+        botNotifications: botNotificationsEnabled ?? true,
         theme: theme ?? 'dark',
       },
     };

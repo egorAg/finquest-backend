@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectBot } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class BotService implements OnModuleInit {
@@ -10,6 +11,7 @@ export class BotService implements OnModuleInit {
   constructor(
     @InjectBot() private readonly bot: Telegraf,
     private readonly config: ConfigService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async onModuleInit() {
@@ -32,7 +34,14 @@ export class BotService implements OnModuleInit {
   }
 
   async sendNotification(telegramId: bigint, message: string) {
-    const appUrl = this.config.get<string>('APP_URL')!;
+    // Check if user has bot notifications enabled
+    const user = await this.prisma.user.findUnique({
+      where: { telegramId },
+      select: { botNotificationsEnabled: true },
+    }).catch(() => null);
+
+    if (user && user.botNotificationsEnabled === false) return;
+
     try {
       const me = await this.bot.telegram.getMe();
       await this.bot.telegram.sendMessage(String(telegramId), message, {

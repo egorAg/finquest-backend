@@ -82,17 +82,20 @@ export class SpacesService {
       update: {},
     });
 
-    // Notify the space owner
+    // Notify the space owner (if they have in-app notifications enabled)
     const joiner = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (joiner && invite.space.ownerId !== userId) {
-      await this.prisma.notification.create({
-        data: {
-          userId: invite.space.ownerId,
-          type: 'NEW_MEMBER',
-          title: 'Новый участник',
-          text: `${joiner.firstName} вступил(а) в пространство «${invite.space.name}»`,
-        },
-      });
+    const owner = await this.prisma.user.findUnique({ where: { id: invite.space.ownerId } });
+    if (joiner && owner && owner.id !== userId) {
+      if (owner.notificationsEnabled) {
+        await this.prisma.notification.create({
+          data: {
+            userId: owner.id,
+            type: 'NEW_MEMBER',
+            title: 'Новый участник',
+            text: `${joiner.firstName} вступил(а) в пространство «${invite.space.name}»`,
+          },
+        });
+      }
     }
 
     return this.prisma.space.findUnique({

@@ -70,9 +70,10 @@ model User {
   lastActiveDate DateTime?
   totalXpEarned  Int       @default(0)
   // Settings (flattened for simplicity)
-  currency       String    @default("RUB")
+  currency             String  @default("RUB")
   notificationsEnabled Boolean @default(true)
-  theme          String    @default("dark")
+  botNotificationsEnabled Boolean @default(true)
+  theme                String  @default("dark")
   createdAt      DateTime  @default(now())
 
   ownedSpaces      Space[]           @relation("SpaceOwner")
