@@ -72,8 +72,9 @@ export class TransactionsService {
     await this.xp.checkFirstTransaction(userId);
     const updatedUser = await this.xp.addXp(userId, 10);
 
-    // Уведомляем других участников общего пространства
     const space = await this.prisma.space.findUnique({ where: { id: dto.spaceId } });
+
+    // Уведомляем других участников общего пространства
     if (space && space.type !== 'PERSONAL') {
       const members = await this.prisma.spaceMember.findMany({
         where: { spaceId: dto.spaceId, userId: { not: userId } },
@@ -84,7 +85,7 @@ export class TransactionsService {
       const action = dto.type === 'EXPENSE' ? 'списал(а)' : 'внёс(ла)';
       const msg = `${emoji} *Новая транзакция* в «${space.name}»\n${transaction.user.firstName} добавил ${sign}${dto.amount} ₽ — ${dto.category}`;
       for (const m of members) {
-        await this.bot.sendNotification(m.user.telegramId, msg);
+        if (m.user.telegramId) await this.bot.sendNotification(m.user.telegramId, msg);
         if (m.user.notificationsEnabled) {
           await this.prisma.notification.create({
             data: {
@@ -98,7 +99,84 @@ export class TransactionsService {
       }
     }
 
+    // Smart notifications for the user who created the transaction
+    if (dto.type === 'EXPENSE' && space) {
+      this.checkSmartNotifications(userId, dto.spaceId, space).catch(() => {});
+    }
+
     return { transaction, xpEarned: 10, user: updatedUser };
+  }
+
+  private async checkSmartNotifications(
+    userId: string,
+    spaceId: string,
+    space: { monthlyBudget: number | null; name: string },
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { notificationsEnabled: true, telegramId: true },
+    });
+    if (!user || !user.notificationsEnabled) return;
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    const monthExpenses = await this.prisma.transaction.findMany({
+      where: { spaceId, type: 'EXPENSE', date: { gte: monthStart, lt: monthEnd } },
+    });
+
+    const totalExpense = monthExpenses.reduce((s, t) => s + t.amount, 0);
+
+    // --- Budget threshold (80% / 100%) ---
+    if (space.monthlyBudget && space.monthlyBudget > 0) {
+      const pct = totalExpense / space.monthlyBudget;
+
+      if (pct >= 1.0) {
+        const existing = await this.prisma.notification.findFirst({
+          where: { userId, type: 'BUDGET_WARNING', title: { contains: '100%' }, createdAt: { gte: monthStart } },
+        });
+        if (!existing) {
+          const title = '🚨 100% бюджета потрачено';
+          const text = `Потрачено ${Math.round(totalExpense)} из ${Math.round(space.monthlyBudget)} в «${space.name}»`;
+          await this.prisma.notification.create({ data: { userId, type: 'BUDGET_WARNING', title, text } });
+          if (user.telegramId) await this.bot.sendNotification(user.telegramId, `${title}\n${text}`);
+        }
+      } else if (pct >= 0.8) {
+        const existing = await this.prisma.notification.findFirst({
+          where: { userId, type: 'BUDGET_WARNING', title: { contains: '80%' }, createdAt: { gte: monthStart } },
+        });
+        if (!existing) {
+          const title = '⚠️ 80% бюджета потрачено';
+          const text = `Потрачено ${Math.round(pct * 100)}% бюджета в «${space.name}», а месяц ещё не кончился`;
+          await this.prisma.notification.create({ data: { userId, type: 'BUDGET_WARNING', title, text } });
+          if (user.telegramId) await this.bot.sendNotification(user.telegramId, `${title}\n${text}`);
+        }
+      }
+    }
+
+    // --- Today's spending vs daily average ---
+    const todayStr = now.toISOString().slice(0, 10);
+    const todayTotal = monthExpenses
+      .filter((t) => t.date.toISOString().slice(0, 10) === todayStr)
+      .reduce((s, t) => s + t.amount, 0);
+
+    const dayOfMonth = now.getDate();
+    if (dayOfMonth > 1) {
+      const avgDaily = totalExpense / dayOfMonth;
+      if (todayTotal > avgDaily * 1.5 && avgDaily > 0) {
+        const todayStart = new Date(todayStr);
+        const existing = await this.prisma.notification.findFirst({
+          where: { userId, type: 'SPENDING_ALERT', createdAt: { gte: todayStart } },
+        });
+        if (!existing) {
+          const title = '📈 Сегодня потратил больше обычного';
+          const text = `Сегодня: ${Math.round(todayTotal)} — это больше среднего (${Math.round(avgDaily)}/день)`;
+          await this.prisma.notification.create({ data: { userId, type: 'SPENDING_ALERT', title, text } });
+          if (user.telegramId) await this.bot.sendNotification(user.telegramId, `${title}\n${text}`);
+        }
+      }
+    }
   }
 
   async deleteTransaction(userId: string, id: string) {

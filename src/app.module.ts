@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { HealthController } from './health.controller';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -15,11 +16,13 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { KnowledgeModule } from './knowledge/knowledge.module';
 import { XpModule } from './xp/xp.module';
 import { BotModule } from './bot/bot.module';
+import { RecurringModule } from './recurring/recurring.module';
 
 @Module({
   controllers: [HealthController],
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     XpModule,
     BotModule,
@@ -34,6 +37,7 @@ import { BotModule } from './bot/bot.module';
     NotificationsModule,
     AnalyticsModule,
     KnowledgeModule,
+    RecurringModule,
   ],
 })
 export class AppModule {}

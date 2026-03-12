@@ -52,6 +52,14 @@ enum NotificationType {
   TIP
   NEW_MEMBER
   TRANSACTION
+  BUDGET_WARNING
+  SPENDING_ALERT
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  MONTHLY
 }
 
 // ─── Models ───────────────────────────────────────────────────────────────────
@@ -77,12 +85,13 @@ model User {
   onboardingDone       Boolean @default(false)
   createdAt      DateTime  @default(now())
 
-  ownedSpaces      Space[]           @relation("SpaceOwner")
-  memberships      SpaceMember[]
-  transactions     Transaction[]
-  notifications    Notification[]
-  achievements     UserAchievement[]
-  userChallenges   UserChallenge[]
+  ownedSpaces              Space[]                @relation("SpaceOwner")
+  memberships              SpaceMember[]
+  transactions             Transaction[]
+  notifications            Notification[]
+  achievements             UserAchievement[]
+  userChallenges           UserChallenge[]
+  recurringTransactions    RecurringTransaction[]
 }
 
 model Space {
@@ -96,11 +105,12 @@ model Space {
   color         String    @default("#4ADE80")
   createdAt     DateTime  @default(now())
 
-  members      SpaceMember[]
-  transactions Transaction[]
-  goals        Goal[]
-  challenges   Challenge[]
-  invites      SpaceInvite[]
+  members               SpaceMember[]
+  transactions          Transaction[]
+  goals                 Goal[]
+  challenges            Challenge[]
+  invites               SpaceInvite[]
+  recurringTransactions RecurringTransaction[]
 }
 
 model SpaceMember {
@@ -236,4 +246,21 @@ model KnowledgeArticle {
   xpReward  Int      @default(20)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
+}
+
+model RecurringTransaction {
+  id            String          @id @default(uuid())
+  spaceId       String
+  space         Space           @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User            @relation(fields: [userId], references: [id])
+  type          TransactionType
+  amount        Float
+  category      String
+  categoryEmoji String          @default("")
+  comment       String          @default("")
+  frequency     Frequency
+  nextRunDate   DateTime        @db.Date
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
 }

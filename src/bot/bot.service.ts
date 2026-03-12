@@ -19,6 +19,7 @@ export class BotService implements OnModuleInit {
     try {
       await this.bot.telegram.setMyCommands([
         { command: 'start', description: 'Открыть FinQuest' },
+        { command: 'balance', description: 'Баланс за текущий месяц' },
       ]);
       await this.bot.telegram.setChatMenuButton({
         menuButton: {

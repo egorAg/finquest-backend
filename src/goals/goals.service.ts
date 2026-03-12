@@ -66,7 +66,7 @@ export class GoalsService {
         });
         const msg = `🎯 *Цель выполнена!*\n«${goal.name}» ${goal.emoji} накоплена полностью! +100 XP`;
         for (const m of members) {
-          await this.bot.sendNotification(m.user.telegramId, msg);
+          if (m.user.telegramId) await this.bot.sendNotification(m.user.telegramId, msg);
         }
       }
     }
