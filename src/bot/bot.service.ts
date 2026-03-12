@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectBot } from 'nestjs-telegraf';
-import { Telegraf, Markup } from 'telegraf';
+import { Telegraf } from 'telegraf';
 
 @Injectable()
 export class BotService implements OnModuleInit {
@@ -36,10 +36,12 @@ export class BotService implements OnModuleInit {
     try {
       await this.bot.telegram.sendMessage(String(telegramId), message, {
         parse_mode: 'Markdown',
-        ...Markup.inlineKeyboard([
-          Markup.button.webApp('Открыть приложение', appUrl),
-        ]),
-      });
+        reply_markup: {
+          inline_keyboard: [[
+            { text: '📱 Открыть приложение', web_app: { url: appUrl } },
+          ]],
+        },
+      } as any);
     } catch (e) {
       this.logger.warn(`Could not send notification to ${telegramId}: ${e.message}`);
     }

@@ -1,6 +1,6 @@
 import { Start, Update } from 'nestjs-telegraf';
 import { ConfigService } from '@nestjs/config';
-import { Context, Markup } from 'telegraf';
+import { Context } from 'telegraf';
 
 @Update()
 export class BotUpdate {
@@ -15,10 +15,12 @@ export class BotUpdate {
       `Привет, ${name}! 👋\n\n💰 *FinQuest* — твой личный финансовый трекер с игровыми механиками.\n\nОтслеживай траты, копи на цели и соревнуйся с друзьями!`,
       {
         parse_mode: 'Markdown',
-        ...Markup.inlineKeyboard([
-          Markup.button.webApp('🚀 Открыть FinQuest', appUrl),
-        ]),
-      },
+        reply_markup: {
+          inline_keyboard: [[
+            { text: '🚀 Открыть FinQuest', web_app: { url: appUrl } },
+          ]],
+        },
+      } as any,
     );
   }
 }
