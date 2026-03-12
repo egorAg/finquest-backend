@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -6,10 +6,14 @@ export class AnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getSummary(userId: string, spaceId: string, month: string) {
-    const member = await this.prisma.spaceMember.findUnique({
-      where: { spaceId_userId: { spaceId, userId } },
-    });
+    const [member, space] = await Promise.all([
+      this.prisma.spaceMember.findUnique({
+        where: { spaceId_userId: { spaceId, userId } },
+      }),
+      this.prisma.space.findUnique({ where: { id: spaceId } }),
+    ]);
     if (!member) throw new ForbiddenException('Not a member of this space');
+    if (!space) throw new NotFoundException('Space not found');
 
     const [year, mon] = month.split('-').map(Number);
     const from = new Date(year, mon - 1, 1);
@@ -102,6 +106,34 @@ export class AnalyticsService {
     const isCurrentMonth = today.getFullYear() === year && today.getMonth() + 1 === mon;
     const daysElapsed = isCurrentMonth ? today.getDate() : daysInMonth;
 
+    // Savings streak: consecutive days within daily budget limit
+    const prevDaysInMonth = new Date(year, mon - 1, 0).getDate();
+    const dailyLimit = space.monthlyBudget
+      ? space.monthlyBudget / daysInMonth
+      : prevExpense > 0
+        ? prevExpense / prevDaysInMonth
+        : null;
+
+    let savingsStreak: number | null = null;
+    if (dailyLimit !== null) {
+      savingsStreak = 0;
+      // Build a map of day number -> expense for quick lookup
+      const dayExpenseMap = new Map<number, number>();
+      for (const entry of byDay) {
+        const dayNum = new Date(entry.date).getDate();
+        dayExpenseMap.set(dayNum, entry.expense);
+      }
+      // Count backwards from last elapsed day
+      for (let d = daysElapsed; d >= 1; d--) {
+        const dayExp = dayExpenseMap.get(d) ?? 0;
+        if (dayExp <= dailyLimit) {
+          savingsStreak++;
+        } else {
+          break;
+        }
+      }
+    }
+
     return {
       income, expense, balance, byCategory, byDay,
       prevMonth: { income: prevIncome, expense: prevExpense, balance: prevIncome - prevExpense },
@@ -109,6 +141,8 @@ export class AnalyticsService {
       daysElapsed,
       mostExpensiveDay,
       frequentCategory,
+      savingsStreak,
+      monthlyBudget: space.monthlyBudget ?? null,
     };
   }
 }
