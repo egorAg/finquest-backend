@@ -15,8 +15,8 @@ class UserSettingsDto {
   botNotifications?: boolean;
 
   @IsOptional()
-  @IsIn(['dark', 'light'])
-  theme?: 'dark' | 'light';
+  @IsIn(['dark', 'light', 'system'])
+  theme?: 'dark' | 'light' | 'system';
 }
 
 export class UpdateUserDto {
