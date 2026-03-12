@@ -62,6 +62,32 @@ export class AnalyticsService {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, vals]) => ({ date, ...vals }));
 
+    // Most expensive day of week (expenses only)
+    const DOW_NAMES = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+    const dowMap = new Map<number, number>();
+    for (const t of transactions.filter((t) => t.type === 'EXPENSE')) {
+      const dow = t.date.getDay();
+      dowMap.set(dow, (dowMap.get(dow) ?? 0) + t.amount);
+    }
+    let mostExpensiveDay: { day: string; dayIndex: number; amount: number } | null = null;
+    if (dowMap.size > 0) {
+      const [topDow, topAmount] = [...dowMap.entries()].sort((a, b) => b[1] - a[1])[0];
+      mostExpensiveDay = { day: DOW_NAMES[topDow], dayIndex: topDow, amount: topAmount };
+    }
+
+    // Most frequent category (by count, expenses only)
+    const catCountMap = new Map<string, { emoji: string; count: number }>();
+    for (const t of transactions.filter((t) => t.type === 'EXPENSE')) {
+      const prev = catCountMap.get(t.category) ?? { emoji: t.categoryEmoji, count: 0 };
+      catCountMap.set(t.category, { emoji: prev.emoji, count: prev.count + 1 });
+    }
+    let frequentCategory: { category: string; emoji: string; count: number } | null = null;
+    if (catCountMap.size > 0) {
+      const [topCat, { emoji: topEmoji, count: topCount }] = [...catCountMap.entries()]
+        .sort((a, b) => b[1].count - a[1].count)[0];
+      frequentCategory = { category: topCat, emoji: topEmoji, count: topCount };
+    }
+
     // Previous month totals
     const prevIncome = prevTransactions
       .filter((t) => t.type === 'INCOME')
@@ -81,6 +107,8 @@ export class AnalyticsService {
       prevMonth: { income: prevIncome, expense: prevExpense, balance: prevIncome - prevExpense },
       daysInMonth,
       daysElapsed,
+      mostExpensiveDay,
+      frequentCategory,
     };
   }
 }
