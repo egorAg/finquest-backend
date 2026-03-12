@@ -49,6 +49,7 @@ enum NotificationType {
   LEVEL_UP
   ACHIEVEMENT
   TIP
+  NEW_MEMBER
 }
 
 // ─── Models ───────────────────────────────────────────────────────────────────
@@ -94,6 +95,7 @@ model Space {
   transactions Transaction[]
   goals        Goal[]
   challenges   Challenge[]
+  invites      SpaceInvite[]
 }
 
 model SpaceMember {
@@ -188,6 +190,16 @@ model Notification {
   text      String           @default("")
   isRead    Boolean          @default(false)
   createdAt DateTime         @default(now())
+}
+
+model SpaceInvite {
+  id        String   @id @default(uuid())
+  token     String   @unique @default(uuid())
+  spaceId   String
+  space     Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  createdBy String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
 
 model KnowledgeArticle {

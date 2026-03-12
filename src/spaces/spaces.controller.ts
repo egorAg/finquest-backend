@@ -19,6 +19,16 @@ export class SpacesController {
     return this.spacesService.createSpace(req.user.id, dto);
   }
 
+  @Post('join/:token')
+  joinByToken(@Request() req: any, @Param('token') token: string) {
+    return this.spacesService.joinByToken(req.user.id, token);
+  }
+
+  @Post(':id/invite')
+  createInvite(@Request() req: any, @Param('id') spaceId: string) {
+    return this.spacesService.createInvite(req.user.id, spaceId);
+  }
+
   @Post(':id/members')
   addMember(@Request() req: any, @Param('id') spaceId: string, @Body() dto: AddMemberDto) {
     return this.spacesService.addMember(req.user.id, spaceId, dto);
