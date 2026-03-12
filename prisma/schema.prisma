@@ -1,0 +1,203 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum SpaceType {
+  PERSONAL
+  FAMILY
+  WORK
+}
+
+enum MemberRole {
+  OWNER
+  MEMBER
+}
+
+enum TransactionType {
+  EXPENSE
+  INCOME
+}
+
+enum ChallengeType {
+  SPENDING_LIMIT
+  STREAK
+  SAVINGS
+  CATEGORY
+}
+
+enum AchievementTrigger {
+  FIRST_TRANSACTION
+  STREAK_7
+  STREAK_30
+  LEVEL_UP
+  GOAL_COMPLETE
+  CHALLENGE_COMPLETE
+  TOTAL_XP
+}
+
+enum NotificationType {
+  STREAK
+  GOAL_PROGRESS
+  CHALLENGE_WARNING
+  LEVEL_UP
+  ACHIEVEMENT
+  TIP
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id             String    @id @default(uuid())
+  telegramId     BigInt?   @unique
+  firstName      String
+  lastName       String    @default("")
+  username       String    @default("")
+  avatarEmoji    String    @default("😊")
+  level          Int       @default(1)
+  xp             Int       @default(0)
+  xpToNext       Int       @default(200)
+  streakDays     Int       @default(0)
+  lastActiveDate DateTime?
+  totalXpEarned  Int       @default(0)
+  // Settings (flattened for simplicity)
+  currency       String    @default("RUB")
+  notificationsEnabled Boolean @default(true)
+  theme          String    @default("dark")
+  createdAt      DateTime  @default(now())
+
+  ownedSpaces      Space[]           @relation("SpaceOwner")
+  memberships      SpaceMember[]
+  transactions     Transaction[]
+  notifications    Notification[]
+  achievements     UserAchievement[]
+}
+
+model Space {
+  id            String    @id @default(uuid())
+  name          String
+  emoji         String    @default("💼")
+  type          SpaceType
+  ownerId       String
+  owner         User      @relation("SpaceOwner", fields: [ownerId], references: [id])
+  monthlyBudget Float?
+  color         String    @default("#4ADE80")
+  createdAt     DateTime  @default(now())
+
+  members      SpaceMember[]
+  transactions Transaction[]
+  goals        Goal[]
+  challenges   Challenge[]
+}
+
+model SpaceMember {
+  id       String     @id @default(uuid())
+  spaceId  String
+  space    Space      @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     MemberRole @default(MEMBER)
+  joinedAt DateTime   @default(now())
+
+  @@unique([spaceId, userId])
+}
+
+model Transaction {
+  id            String          @id @default(uuid())
+  spaceId       String
+  space         Space           @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User            @relation(fields: [userId], references: [id])
+  type          TransactionType
+  amount        Float
+  category      String
+  categoryEmoji String          @default("")
+  comment       String          @default("")
+  date          DateTime        @db.Date
+  createdAt     DateTime        @default(now())
+  xpEarned      Int             @default(0)
+}
+
+model Goal {
+  id            String    @id @default(uuid())
+  spaceId       String
+  space         Space     @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  name          String
+  emoji         String    @default("🎯")
+  targetAmount  Float
+  currentAmount Float     @default(0)
+  deadline      DateTime? @db.Date
+  color         String    @default("#4ADE80")
+  isCompleted   Boolean   @default(false)
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+}
+
+model Challenge {
+  id           String        @id @default(uuid())
+  title        String
+  description  String        @default("")
+  emoji        String        @default("🏆")
+  xpReward     Int           @default(50)
+  type         ChallengeType
+  targetValue  Float
+  currentValue Float         @default(0)
+  deadline     DateTime      @db.Date
+  isCompleted  Boolean       @default(false)
+  completedAt  DateTime?
+  spaceId      String?
+  space        Space?        @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+  createdAt    DateTime      @default(now())
+}
+
+model Achievement {
+  id           String             @id @default(uuid())
+  name         String
+  description  String             @default("")
+  emoji        String             @default("🏅")
+  xpReward     Int                @default(0)
+  triggerType  AchievementTrigger
+  triggerValue Int?
+
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  unlockedAt    DateTime    @default(now())
+
+  @@unique([userId, achievementId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  text      String           @default("")
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+}
+
+model KnowledgeArticle {
+  id        String   @id @default(uuid())
+  title     String
+  emoji     String   @default("📖")
+  category  String   // 'basics' | 'savings' | 'investing' | 'budgeting' | 'psychology'
+  readTime  Int      @default(3) // минуты
+  content   String
+  xpReward  Int      @default(20)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
