@@ -27,9 +27,10 @@ enum TransactionType {
 
 enum ChallengeType {
   SPENDING_LIMIT
+  MIN_SPENDING
+  CATEGORY_AVOID
   STREAK
-  SAVINGS
-  CATEGORY
+  GOAL_COMPLETE
 }
 
 enum AchievementTrigger {
@@ -79,6 +80,7 @@ model User {
   transactions     Transaction[]
   notifications    Notification[]
   achievements     UserAchievement[]
+  userChallenges   UserChallenge[]
 }
 
 model Space {
@@ -143,20 +145,38 @@ model Goal {
 }
 
 model Challenge {
-  id           String        @id @default(uuid())
-  title        String
-  description  String        @default("")
-  emoji        String        @default("🏆")
-  xpReward     Int           @default(50)
-  type         ChallengeType
-  targetValue  Float
-  currentValue Float         @default(0)
-  deadline     DateTime      @db.Date
-  isCompleted  Boolean       @default(false)
+  id          String        @id @default(uuid())
+  title       String
+  description String        @default("")
+  emoji       String        @default("🏆")
+  xpReward    Int           @default(50)
+  type        ChallengeType
+  targetValue Float
+  categoryKey String?       // category to track (for SPENDING_LIMIT, MIN_SPENDING, CATEGORY_AVOID)
+  periodType  String?       // "MONTH" | "WEEK" | "DAYS" | null
+  periodDays  Int?          // number of days when periodType = "DAYS"
+  deadline    DateTime      @db.Date
+  spaceId     String?
+  space       Space?        @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+  createdAt   DateTime      @default(now())
+
+  userChallenges UserChallenge[]
+}
+
+model UserChallenge {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challengeId  String
+  challenge    Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  currentValue Float     @default(0)
+  isCompleted  Boolean   @default(false)
+  isFailed     Boolean   @default(false)
   completedAt  DateTime?
-  spaceId      String?
-  space        Space?        @relation(fields: [spaceId], references: [id], onDelete: SetNull)
-  createdAt    DateTime      @default(now())
+  failedAt     DateTime?
+  joinedAt     DateTime  @default(now())
+
+  @@unique([userId, challengeId])
 }
 
 model Achievement {
