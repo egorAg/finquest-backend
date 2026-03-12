@@ -7,6 +7,11 @@ import { LeaderboardService } from './leaderboard.service';
 export class LeaderboardController {
   constructor(private readonly leaderboardService: LeaderboardService) {}
 
+  @Get('season-info')
+  getSeasonInfo() {
+    return this.leaderboardService.currentSeasonInfo();
+  }
+
   @Get()
   getLeaderboard(@Query('season') season?: string, @Query('limit') limit?: string) {
     return this.leaderboardService.getLeaderboard(season, limit ? parseInt(limit) : 50);
