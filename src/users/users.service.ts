@@ -34,16 +34,19 @@ export class UsersService {
     return this.formatUser(user);
   }
 
-  private formatUser(user: any) {
-    const { achievements, ...rest } = user;
+  formatUser(user: any) {
+    const { achievements, currency, notificationsEnabled, theme, language, ...rest } = user;
+    const xpPerLevel = 200;
+    const xpToNext = xpPerLevel - (rest.xp % xpPerLevel);
     return {
       ...rest,
       telegramId: rest.telegramId ? Number(rest.telegramId) : null,
+      xpToNext,
       achievements: achievements?.map((ua: any) => ua.achievementId) ?? [],
       settings: {
-        currency: rest.currency,
-        notifications: rest.notificationsEnabled,
-        theme: rest.theme,
+        currency: currency ?? 'RUB',
+        notifications: notificationsEnabled ?? true,
+        theme: theme ?? 'dark',
       },
     };
   }

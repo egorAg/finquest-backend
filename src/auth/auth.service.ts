@@ -1,7 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { createHmac, createHash } from 'crypto';
+import { createHmac } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { UsersService } from '../users/users.service';
 import { TelegramAuthDto } from './dto/telegram-auth.dto';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly users: UsersService,
   ) {}
 
   async telegramAuth(dto: TelegramAuthDto) {
@@ -44,7 +46,8 @@ export class AuthService {
     }
 
     const token = this.jwt.sign({ sub: user.id });
-    return { user: this.formatUser(user), token };
+    const fullUser = await this.users.getMe(user.id);
+    return { user: fullUser, token };
   }
 
   private validateInitData(initData: string): Record<string, any> {
@@ -74,10 +77,4 @@ export class AuthService {
     return JSON.parse(userParam);
   }
 
-  private formatUser(user: any) {
-    return {
-      ...user,
-      telegramId: user.telegramId ? Number(user.telegramId) : null,
-    };
-  }
 }
