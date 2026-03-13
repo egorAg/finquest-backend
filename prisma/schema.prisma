@@ -83,6 +83,7 @@ model User {
   botNotificationsEnabled Boolean @default(true)
   theme                String  @default("dark")
   onboardingDone       Boolean @default(false)
+  isAdmin              Boolean @default(false)
   createdAt      DateTime  @default(now())
 
   ownedSpaces              Space[]                @relation("SpaceOwner")
@@ -245,6 +246,14 @@ model KnowledgeArticle {
   content   String
   xpReward  Int      @default(20)
   sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Announcement {
+  id        String   @id @default(uuid())
+  text      String
+  emoji     String   @default("📢")
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 }
 

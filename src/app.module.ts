@@ -17,6 +17,7 @@ import { KnowledgeModule } from './knowledge/knowledge.module';
 import { XpModule } from './xp/xp.module';
 import { BotModule } from './bot/bot.module';
 import { RecurringModule } from './recurring/recurring.module';
+import { AnnouncementsModule } from './announcements/announcements.module';
 
 @Module({
   controllers: [HealthController],
@@ -38,6 +39,7 @@ import { RecurringModule } from './recurring/recurring.module';
     AnalyticsModule,
     KnowledgeModule,
     RecurringModule,
+    AnnouncementsModule,
   ],
 })
 export class AppModule {}

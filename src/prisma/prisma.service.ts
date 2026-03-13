@@ -24,6 +24,7 @@ export class PrismaService implements OnModuleInit {
   get knowledgeArticle(){ return this._client.knowledgeArticle; }
   get spaceInvite()     { return this._client.spaceInvite; }
   get recurringTransaction() { return this._client.recurringTransaction; }
+  get announcement()          { return this._client.announcement; }
 
   async onModuleInit() {
     await this._client.$connect();
