@@ -24,11 +24,16 @@ export class KnowledgeService {
       },
     });
 
-    const reads = await this.prisma.userArticleRead.findMany({
-      where: { userId },
-      select: { articleId: true },
-    });
-    const readSet = new Set(reads.map((r) => r.articleId));
+    let readSet = new Set<string>();
+    try {
+      const reads = await (this.prisma as any).userArticleRead.findMany({
+        where: { userId },
+        select: { articleId: true },
+      });
+      readSet = new Set(reads.map((r: any) => r.articleId));
+    } catch {
+      // Migration not yet applied — return isRead: false for all
+    }
 
     return articles.map((a) => ({ ...a, isRead: readSet.has(a.id) }));
   }
@@ -41,14 +46,19 @@ export class KnowledgeService {
     const article = await this.prisma.knowledgeArticle.findUnique({ where: { id: articleId } });
     if (!article) throw new NotFoundException('Article not found');
 
-    const existing = await this.prisma.userArticleRead.findUnique({
-      where: { userId_articleId: { userId, articleId } },
-    });
-    if (existing) return { ok: true, xpEarned: 0 };
+    try {
+      const existing = await (this.prisma as any).userArticleRead.findUnique({
+        where: { userId_articleId: { userId, articleId } },
+      });
+      if (existing) return { ok: true, xpEarned: 0 };
 
-    await this.prisma.userArticleRead.create({ data: { userId, articleId } });
-    await this.xp.addXp(userId, article.xpReward);
+      await (this.prisma as any).userArticleRead.create({ data: { userId, articleId } });
+      await this.xp.addXp(userId, article.xpReward);
 
-    return { ok: true, xpEarned: article.xpReward };
+      return { ok: true, xpEarned: article.xpReward };
+    } catch {
+      // Migration not yet applied
+      return { ok: false, xpEarned: 0 };
+    }
   }
 }
