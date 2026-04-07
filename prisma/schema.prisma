@@ -93,6 +93,7 @@ model User {
   achievements             UserAchievement[]
   userChallenges           UserChallenge[]
   recurringTransactions    RecurringTransaction[]
+  articleReads             UserArticleRead[]
 }
 
 model Space {
@@ -247,6 +248,19 @@ model KnowledgeArticle {
   xpReward  Int      @default(20)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
+
+  reads UserArticleRead[]
+}
+
+model UserArticleRead {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articleId String
+  article   KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  readAt    DateTime         @default(now())
+
+  @@unique([userId, articleId])
 }
 
 model Announcement {

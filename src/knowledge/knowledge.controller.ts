@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { KnowledgeService } from './knowledge.service';
 
@@ -8,12 +8,17 @@ export class KnowledgeController {
   constructor(private readonly knowledgeService: KnowledgeService) {}
 
   @Get()
-  getArticles(@Query('category') category?: string) {
-    return this.knowledgeService.getArticles(category);
+  getArticles(@Request() req: any, @Query('category') category?: string) {
+    return this.knowledgeService.getArticles(req.user.id, category);
   }
 
   @Get(':id')
   getArticle(@Param('id') id: string) {
     return this.knowledgeService.getArticle(id);
+  }
+
+  @Post(':id/read')
+  markRead(@Request() req: any, @Param('id') id: string) {
+    return this.knowledgeService.markRead(req.user.id, id);
   }
 }

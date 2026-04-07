@@ -4,6 +4,7 @@ import { XpService } from '../xp/xp.service';
 import { BotService } from '../bot/bot.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { QueryTransactionsDto } from './dto/query-transactions.dto';
+import { UpdateTransactionDto } from './dto/update-transaction.dto';
 
 @Injectable()
 export class TransactionsService {
@@ -177,6 +178,24 @@ export class TransactionsService {
         }
       }
     }
+  }
+
+  async updateTransaction(userId: string, id: string, dto: UpdateTransactionDto) {
+    const tx = await this.prisma.transaction.findUnique({ where: { id } });
+    if (!tx) throw new NotFoundException('Transaction not found');
+    if (tx.userId !== userId) throw new ForbiddenException('Not your transaction');
+
+    return this.prisma.transaction.update({
+      where: { id },
+      data: {
+        ...(dto.amount !== undefined && { amount: dto.amount }),
+        ...(dto.category !== undefined && { category: dto.category }),
+        ...(dto.categoryEmoji !== undefined && { categoryEmoji: dto.categoryEmoji }),
+        ...(dto.comment !== undefined && { comment: dto.comment }),
+        ...(dto.date !== undefined && { date: new Date(dto.date) }),
+      },
+      include: { user: true },
+    });
   }
 
   async deleteTransaction(userId: string, id: string) {
